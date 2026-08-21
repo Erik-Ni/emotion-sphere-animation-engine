@@ -8,7 +8,7 @@ Built for the IPMD Emotion Sphere project — a digital art installation intende
 to help children explore and reflect their emotional state.
 *Project Manager: Myranoush Khan.*
 
-Live: https://lost-in-space-light.vercel.app
+Live: https://emotion-sphere-animation-engine.vercel.app/
 
 **Design reference:** [Figma — Emotion Sphere Particle Engine redesign](https://www.figma.com/design/FCQj42AClQLDXKuxpvuuHb/emotion-sphere-particle-engine-redesign?node-id=0-1&t=rJTidOnDuIgeaBHB-1)
 — the panel UI in `index.html` follows this for layout/visual direction; not
@@ -67,7 +67,7 @@ control it from your code.
 
 ```html
 <iframe
-  src="https://lost-in-space-light.vercel.app/index.html?mode=kiosk&emotion=calm"
+  src="https://emotion-sphere-animation-engine.vercel.app/index.html?mode=kiosk&emotion=calm"
   style="width:100%; height:100%; border:0;"
   allow="autoplay">
 </iframe>
@@ -172,7 +172,7 @@ save/load glue in **`index.html`**.
 Deployed on Vercel, connected directly to **this repo**
 (`emotion-sphere-animation-engine`) with **`colour-switch` as the production
 branch** — every push to `colour-switch` auto-deploys to
-https://lost-in-space-light.vercel.app, no manual step needed.
+https://emotion-sphere-animation-engine.vercel.app, no manual step needed.
 
 (This wasn't always the case: the Vercel project used to be connected to a
 different repo, `lost-in-space-light`, which is why old commit messages or

@@ -55,21 +55,51 @@ No auth/multi-tenancy exists in this app (it's an internal team tool, no
 login system) — a single shared table is fine. Don't build user accounts
 unless someone explicitly asks for that.
 
-## 3. Suggested architecture
+## 3. Architecture — Supabase (decided)
 
 This is deployed on Vercel as a static site with **no build step** (see
-README.md "Run locally" / "Deployment"). Keep it that way:
+README.md "Run locally" / "Deployment"). Keep it that way — Supabase is the
+DB, Vercel stays purely the static host + serverless API layer:
 
 - **API**: Vercel Serverless Functions under `api/` (e.g. `api/presets.js`
   handling GET/POST, `api/presets/[id].js` handling DELETE). Vercel picks
   these up automatically — no framework needed, no change to how the rest of
   the site deploys (`npx vercel --prod` still just works).
-- **DB**: Vercel Postgres (or Neon/Supabase Postgres, which Vercel also
-  integrates with) is the path of least friction given the existing Vercel
-  project — but pick whatever you're fastest with, it's one small table.
-- **Env vars**: put the DB connection string in Vercel project env vars
-  (`.env.local` already exists locally for other secrets — follow the same
-  pattern, don't commit credentials).
+- **DB**: [Supabase](https://supabase.com) Postgres. Create a project there
+  (separate account/dashboard from Vercel — access is granted in Supabase's
+  own dashboard under Project Settings → Team, not through Vercel), then
+  the one table from §2:
+  ```sql
+  create table presets (
+    id uuid primary key default gen_random_uuid(),
+    name text,
+    preset_text text not null,
+    created_at timestamptz default now()
+  );
+  ```
+- **Client**: use `@supabase/supabase-js` from the serverless functions
+  (server-side only — see the key split below). This is a static site with
+  no `package.json`/build step today; adding this one dependency means
+  either vendoring it or accepting that `api/` functions get their own
+  minimal `package.json` (Vercel supports per-directory dependencies for
+  serverless functions without turning the whole site into a build-step
+  project). Don't let this creep into requiring a bundler for `index.html`.
+- **Env vars** (Vercel → Project → Settings → Environment Variables):
+  | Variable | Where it's used | Notes |
+  |---|---|---|
+  | `SUPABASE_URL` | `api/*.js` | Project URL, from Supabase dashboard → Settings → API |
+  | `SUPABASE_SERVICE_ROLE_KEY` | `api/*.js` **only** | Full read/write access, bypasses Row Level Security. **Server-only** — same rule as the Gemini key in `docs/GEMINI_INTEGRATION.md`: never put this in client-side code, it ships to every visitor on a static site |
+  | `SUPABASE_ANON_KEY` | not needed here | Only relevant if the browser ever talks to Supabase directly instead of through `api/`. This doc's design routes everything through the serverless proxy, so you likely won't need this one — skip it unless a future feature calls for direct client access |
+  Get both from Supabase dashboard → Project Settings → API. Add locally to
+  `.env.local` too (`.env*` is gitignored — never commit these).
+- **Row Level Security**: Supabase enables RLS by default on new tables,
+  which blocks all access until you add a policy. Since there's no
+  auth/multi-tenancy in this app (§2), the simplest correct setup is: only
+  ever hit this table from `api/*.js` using the **service role key**
+  (which bypasses RLS entirely) and leave RLS on with no public policies —
+  that way the table is unreachable directly from a browser even if
+  someone finds the Supabase project URL, and only your own serverless
+  functions (holding the secret key) can touch it.
 
 ## 4. Suggested API contract
 
